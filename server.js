@@ -59,6 +59,23 @@ async function getGateway() {
   return match ? match[1] : null;
 }
 
+function isPingBlocked(output = "") {
+  return /Operation not permitted|SOCK_RAW|cap_net_raw/i.test(output);
+}
+
+async function checkNeighbor(gateway) {
+  if (!gateway) return { ok: false, output: "" };
+  if (process.platform === "darwin") {
+    return runCmd("arp", ["-n", gateway], 8000);
+  }
+  if (process.platform === "win32") {
+    return runCmd("arp", ["-a", gateway], 8000);
+  }
+  const ipNeigh = await runCmd("ip", ["neigh", "show", gateway], 8000);
+  if (ipNeigh.ok && ipNeigh.output.trim()) return ipNeigh;
+  return runCmd("arp", ["-n", gateway], 8000);
+}
+
 async function getDnsServers() {
   if (process.platform === "win32") {
     const { output } = await runCmd("ipconfig", ["/all"]);
@@ -442,11 +459,20 @@ const server = http.createServer((req, res) => {
       if (gateway) {
         const pingArgs = isWin ? ["-n", "2", "-w", "2000", gateway] : ["-c", "2", gateway];
         const localPing = await runCmd("ping", pingArgs, 15000);
-        local = {
-          ok: localPing.ok,
-          label: localPing.ok ? "OK" : "No response",
-          output: localPing.output,
-        };
+        if (!localPing.ok && isPingBlocked(localPing.output)) {
+          const neigh = await checkNeighbor(gateway);
+          local = {
+            ok: neigh.ok ? true : null,
+            label: neigh.ok ? "Reachable (ARP)" : "Ping blocked",
+            output: `${localPing.output}\n${neigh.output}`.trim(),
+          };
+        } else {
+          local = {
+            ok: localPing.ok,
+            label: localPing.ok ? "OK" : "No response",
+            output: localPing.output,
+          };
+        }
       }
 
       const internetPing = await runCmd(
@@ -454,6 +480,7 @@ const server = http.createServer((req, res) => {
         isWin ? ["-n", "2", "-w", "2000", "1.1.1.1"] : ["-c", "2", "1.1.1.1"],
         15000
       );
+      const internetPingBlocked = !internetPing.ok && isPingBlocked(internetPing.output);
 
       let dns = await runCmd("nslookup", ["cloudflare.com"], 15000);
       if (!dns.ok && !isWin) {
@@ -479,8 +506,8 @@ const server = http.createServer((req, res) => {
           output: local.output,
         },
         internet: {
-          ok: internetPing.ok,
-          label: internetPing.ok ? "OK" : "No response",
+          ok: internetPing.ok ? true : internetPingBlocked ? null : false,
+          label: internetPing.ok ? "OK" : internetPingBlocked ? "Ping blocked" : "No response",
           output: internetPing.output,
         },
         dns: {

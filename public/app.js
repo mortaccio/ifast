@@ -259,7 +259,11 @@ async function runTrace() {
 function setTsStatus(el, ok, text) {
   const status = el.querySelector(".ts-status");
   status.textContent = text;
-  el.style.borderColor = ok ? "rgba(34, 197, 94, 0.45)" : "rgba(248, 113, 113, 0.45)";
+  if (ok === null) {
+    el.style.borderColor = "rgba(250, 204, 21, 0.5)";
+  } else {
+    el.style.borderColor = ok ? "rgba(34, 197, 94, 0.45)" : "rgba(248, 113, 113, 0.45)";
+  }
 }
 
 function updateSummary() {
