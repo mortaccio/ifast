@@ -4,12 +4,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>IFAST — Local Network Diagnostics</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="logo.svg" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="noise"></div>
     <header class="top">
-      <div class="brand">IFAST</div>
+      <div class="brand">
+        <img class="brand-logo" src="logo.svg" alt="IFAST logo" />
+        <span class="brand-text">IFAST</span>
+      </div>
       <div class="tagline">Local network diagnostics and speed test.</div>
     </header>
 
@@ -63,7 +68,7 @@
       <details open class="extra-card">
         <summary>Details</summary>
         <div class="extra-grid">
-          <div class="extra-block">
+          <div class="extra-block extra-wide">
             <div class="label">System</div>
             <div class="mini" id="systemValue">—</div>
             <div class="label">Local IPs</div>
@@ -173,6 +178,63 @@
             <pre class="trace-output" id="troubleshootOutput">—</pre>
           </div>
           <div class="extra-block extra-wide">
+            <div class="label">Live Monitor</div>
+            <div class="monitor-head">
+              <div class="monitor-status" id="monitorStatus">
+                <span class="summary-dot"></span>
+                <span class="summary-text">Idle</span>
+              </div>
+              <div class="monitor-actions">
+                <button class="ghost" id="monitorStartBtn">Start</button>
+                <button class="ghost" id="monitorStopBtn" disabled>Stop</button>
+              </div>
+            </div>
+            <div class="monitor-body">
+              <div class="monitor-metrics">
+                <div class="summary-item">
+                  <span class="summary-key">Current</span>
+                  <span class="summary-val" id="monitorCurrent">—</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-key">Average</span>
+                  <span class="summary-val" id="monitorAvg">—</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-key">Loss</span>
+                  <span class="summary-val" id="monitorLoss">—</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-key">Samples</span>
+                  <span class="summary-val" id="monitorSamples">—</span>
+                </div>
+              </div>
+              <div class="monitor-spark" id="monitorSpark"></div>
+              <div class="mini">Measures latency to the Cloudflare edge every 1.5s.</div>
+            </div>
+          </div>
+          <div class="extra-block extra-wide">
+            <div class="label">Troubleshoot Assistant</div>
+            <div class="assistant-grid">
+              <div class="field">
+                <label for="assistantSymptom">Symptom</label>
+                <select id="assistantSymptom">
+                  <option value="no-internet">No internet</option>
+                  <option value="slow">Slow speeds</option>
+                  <option value="dns">Sites not loading (DNS)</option>
+                  <option value="drops">Dropouts / unstable</option>
+                  <option value="single-device">Only one device affected</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="assistantHost">Test host</label>
+                <input id="assistantHost" type="text" value="cloudflare.com" />
+              </div>
+              <button class="cta" id="assistantRunBtn">Run Assistant</button>
+              <button class="ghost" id="assistantCopyBtn" disabled>Copy Report</button>
+            </div>
+            <pre class="trace-output" id="assistantOutput">—</pre>
+          </div>
+          <div class="extra-block extra-wide">
             <div class="label">Full Diagnostics</div>
             <div class="mini">System command outputs (may include sensitive info)</div>
             <div class="diag-head">
@@ -204,7 +266,7 @@
     </section>
 
     <footer class="foot">
-      <span>Local server: data stays on your device.</span>
+      <span>Diagnostics run locally; speed test uses Cloudflare edge.</span>
     </footer>
 
     <script src="app.js"></script>

@@ -43,5 +43,6 @@ Output file: `dist/ifast.exe`
 - Open `http://localhost:3000` in a browser
 
 ## Notes
-- The speed test measures the connection to the machine running the server.
-- For LAN testing between two PCs, run the server on one and open the page from the other.
+- Speed test traffic goes to Cloudflare's public edge endpoints.
+- Diagnostics and OS command output are collected locally by the host machine.
+- Internet access is required for public IP, latency, and speed tests.

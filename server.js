@@ -170,6 +170,41 @@ function makeRandomStream(totalBytes) {
   });
 }
 
+function httpProbe(target, timeout = 6000) {
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const req = https.get(target, (resp) => {
+      resp.on("data", () => {});
+      resp.on("end", () => {
+        resolve({
+          ok: resp.statusCode >= 200 && resp.statusCode < 400,
+          status: resp.statusCode,
+          ms: Date.now() - start,
+        });
+      });
+    });
+    req.on("error", (err) => {
+      resolve({ ok: false, error: err.message, ms: Date.now() - start });
+    });
+    req.setTimeout(timeout, () => {
+      req.destroy();
+      resolve({ ok: false, error: "timeout", ms: Date.now() - start });
+    });
+  });
+}
+
+function resolveDns(fn, host) {
+  return new Promise((resolve) => {
+    fn(host, (err, addresses) => {
+      if (err) {
+        resolve({ ok: false, error: err.code || err.message, addresses: [] });
+      } else {
+        resolve({ ok: true, addresses });
+      }
+    });
+  });
+}
+
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
@@ -528,6 +563,46 @@ const server = http.createServer((req, res) => {
         200,
         { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
         JSON.stringify(payload)
+      );
+    })();
+    return;
+  }
+
+  if (url.pathname === "/dns-test") {
+    const host = (url.searchParams.get("host") || "").trim();
+    if (!host || host.length > 128 || !/^[a-zA-Z0-9.\-:]+$/.test(host)) {
+      return send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad host");
+    }
+    (async () => {
+      const v4 = await resolveDns(dns.resolve4, host);
+      const v6 = await resolveDns(dns.resolve6, host);
+      send(
+        res,
+        200,
+        { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+        JSON.stringify({ host, v4, v6, now: Date.now() })
+      );
+    })();
+    return;
+  }
+
+  if (url.pathname === "/latency") {
+    (async () => {
+      const targets = [
+        { name: "Google 204", url: "https://www.gstatic.com/generate_204" },
+        { name: "Cloudflare trace", url: "https://cloudflare.com/cdn-cgi/trace" },
+      ];
+      const results = await Promise.all(
+        targets.map(async (t) => {
+          const resProbe = await httpProbe(t.url, 6000);
+          return { name: t.name, ...resProbe };
+        })
+      );
+      send(
+        res,
+        200,
+        { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+        JSON.stringify({ targets: results, now: Date.now() })
       );
     })();
     return;
