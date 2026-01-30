@@ -10,6 +10,7 @@
   </head>
   <body>
     <div class="noise"></div>
+    <div class="scanlines"></div>
     <header class="top">
       <div class="brand">
         <img class="brand-logo" src="logo.svg" alt="IFAST logo" />
@@ -17,6 +18,17 @@
       </div>
       <div class="tagline">Local network diagnostics and speed test.</div>
     </header>
+    <section class="sig">
+      <pre class="sig-ascii" aria-hidden="true">
+.___________________    ____________________
+|   \_   _____/  _  \  /   _____/\__    ___/
+|   ||    __)/  /_\  \ \_____  \   |    |   
+|   ||     \/    |    \/        \  |    |   
+|___|\___  /\____|__  /_______  /  |____|   
+         \/         \/        \/            
+      </pre>
+      <div class="sig-sub">Open-source underground diagnostics console</div>
+    </section>
 
     <main class="panel">
       <section class="hero">
@@ -28,6 +40,7 @@
           <span class="speed-label">LIVE</span>
           <span class="speed-value" id="speedValue">—</span>
           <span class="speed-unit">Mbps</span>
+          <span class="speed-arrow" id="speedArrow" aria-hidden="true">⇅</span>
         </div>
         <div class="phase" id="phase">Ready</div>
         <div class="hero-actions">
@@ -123,10 +136,56 @@
                 <span class="summary-val" id="summarySpeed">—</span>
               </div>
               <div class="summary-item">
+                <span class="summary-key">Latency Target</span>
+                <span class="summary-val" id="summaryLatencyTarget">—</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-key">ICMP Avg</span>
+                <span class="summary-val" id="summaryIcmp">—</span>
+              </div>
+              <div class="summary-item">
                 <span class="summary-key">Updated</span>
                 <span class="summary-val" id="summaryUpdated">—</span>
               </div>
             </div>
+          </div>
+          <div class="extra-block">
+            <div class="label">Speed Rating</div>
+            <div class="rating" id="speedRating">—</div>
+            <div class="rating-stars" id="speedStars"></div>
+            <div class="mini" id="speedAdvice">Run a speed test to rate the connection.</div>
+            <div class="use-list" id="speedUse"></div>
+          </div>
+          <div class="extra-block">
+            <div class="label">Best Test Provider</div>
+            <div class="mini">Chooses the lowest-latency public endpoint.</div>
+            <button class="ghost" id="providerBtn">Find Best Provider</button>
+            <div class="provider-output" id="providerOutput">—</div>
+          </div>
+          <div class="extra-block">
+            <div class="label">Auto Diagnosis</div>
+            <div class="mini">Explains likely causes after each test.</div>
+            <div class="diag-status" id="autoDiagStatus">Run a test to diagnose.</div>
+            <div class="diag-list" id="autoDiagList"></div>
+          </div>
+          <div class="extra-block">
+            <div class="label">Wi-Fi vs ISP</div>
+            <div class="split-grid">
+              <div class="split-card">
+                <div class="split-label">Wi-Fi / Local</div>
+                <div class="split-value" id="localStatus">—</div>
+              </div>
+              <div class="split-card">
+                <div class="split-label">ISP / Internet</div>
+                <div class="split-value" id="ispStatus">—</div>
+              </div>
+            </div>
+            <div class="mini" id="splitHint">Run a test for a verdict.</div>
+          </div>
+          <div class="extra-block extra-wide">
+            <div class="label">History</div>
+            <div class="mini">Last 14 results saved locally.</div>
+            <div class="history-grid" id="historyGrid"></div>
           </div>
           <div class="extra-block extra-wide">
             <div class="label">Troubleshooting</div>
@@ -208,8 +267,8 @@
                   <span class="summary-val" id="monitorSamples">—</span>
                 </div>
               </div>
-              <div class="monitor-spark" id="monitorSpark"></div>
-              <div class="mini">Measures latency to the Cloudflare edge every 1.5s.</div>
+              <canvas class="monitor-spark" id="monitorSpark" aria-hidden="true"></canvas>
+              <div class="mini">High-frequency edge checks to capture brief drops.</div>
             </div>
           </div>
           <div class="extra-block extra-wide">
@@ -233,6 +292,19 @@
               <button class="ghost" id="assistantCopyBtn" disabled>Copy Report</button>
             </div>
             <pre class="trace-output" id="assistantOutput">—</pre>
+          </div>
+          <div class="extra-block extra-wide">
+            <div class="label">Issue Finder</div>
+            <div class="mini">Universal checks that work across Windows/macOS/Linux.</div>
+            <div class="assistant-grid">
+              <div class="field">
+                <label for="finderHost">Test host</label>
+                <input id="finderHost" type="text" value="cloudflare.com" />
+              </div>
+              <button class="cta" id="finderRunBtn">Run Issue Finder</button>
+              <button class="ghost" id="finderCopyBtn" disabled>Copy Report</button>
+            </div>
+            <pre class="trace-output" id="finderOutput">—</pre>
           </div>
           <div class="extra-block extra-wide">
             <div class="label">Full Diagnostics</div>

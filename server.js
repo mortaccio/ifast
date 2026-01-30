@@ -608,6 +608,71 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (url.pathname === "/provider-check") {
+    (async () => {
+      const providers = [
+        {
+          name: "Cloudflare speed",
+          url: "https://speed.cloudflare.com/__down?bytes=200000",
+          cors: true,
+        },
+        { name: "Google 204", url: "https://www.gstatic.com/generate_204", cors: false },
+        { name: "Cloudflare trace", url: "https://cloudflare.com/cdn-cgi/trace", cors: false },
+      ];
+      const results = await Promise.all(
+        providers.map(async (p) => {
+          const resProbe = await httpProbe(p.url, 6000);
+          return { name: p.name, url: p.url, cors: p.cors, ...resProbe };
+        })
+      );
+      results.sort((a, b) => {
+        if (a.ok && b.ok) return a.ms - b.ms;
+        if (a.ok) return -1;
+        if (b.ok) return 1;
+        return a.ms - b.ms;
+      });
+      send(
+        res,
+        200,
+        { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+        JSON.stringify({ providers: results, now: Date.now() })
+      );
+    })();
+    return;
+  }
+
+  if (url.pathname === "/icmp") {
+    const host = (url.searchParams.get("host") || "").trim();
+    if (!host || host.length > 128 || !/^[a-zA-Z0-9.\-:]+$/.test(host)) {
+      return send(res, 400, { "Content-Type": "text/plain; charset=utf-8" }, "Bad host");
+    }
+    (async () => {
+      const isWin = process.platform === "win32";
+      const args = isWin ? ["-n", "3", "-w", "2000", host] : ["-c", "3", "-W", "2", host];
+      const result = await runCmd("ping", args, 15000);
+      let avgMs = null;
+      if (result.ok) {
+        const out = result.output;
+        const winMatch = out.match(/Average\s*=\s*(\d+)\s*ms/i);
+        const unixMatch = out.match(/=\s*([\d.]+)\/([\d.]+)\/([\d.]+)/);
+        if (winMatch) avgMs = Number(winMatch[1]);
+        else if (unixMatch) avgMs = Number(unixMatch[2]);
+      }
+      send(
+        res,
+        200,
+        { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" },
+        JSON.stringify({
+          ok: result.ok,
+          avgMs,
+          output: result.output,
+          error: result.ok ? null : result.output || "Ping failed",
+        })
+      );
+    })();
+    return;
+  }
+
   if (url.pathname === "/trace") {
     const host = (url.searchParams.get("host") || "").trim();
     if (!host || host.length > 128 || !/^[a-zA-Z0-9.\-:]+$/.test(host)) {
