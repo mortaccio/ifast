@@ -45,7 +45,12 @@ const DOWNLOAD_RUNS_MB = [10, 25, 50];
 const UPLOAD_RUNS_MB = [5, 10];
 const MONITOR_INTERVAL_MS = 300;
 const LATENCY_FALLBACK_URL = "https://speed.cloudflare.com/__down?bytes=20000";
-const PUBLIC_IP_ENDPOINT = "https://api.ipify.org?format=json";
+const PUBLIC_IP_ENDPOINTS = [
+  { url: "https://api.ipify.org?format=json" },
+  { url: "https://api64.ipify.org?format=json" },
+  { url: "https://ifconfig.co/json", headers: { Accept: "application/json" } },
+  { url: "https://ipapi.co/json/" },
+];
 
 let latencyProvider = {
   name: "Cloudflare speed",
@@ -392,14 +397,31 @@ async function runTest() {
 
 async function loadPublicIp() {
   try {
-    const res = await fetch(PUBLIC_IP_ENDPOINT, { cache: "no-store" });
-    const data = await res.json();
+    const data = await fetchPublicIp();
     publicIpValue.textContent = data.ip || "—";
     summaryPublicIp.textContent = data.ip || "—";
   } catch (err) {
     publicIpValue.textContent = "—";
     summaryPublicIp.textContent = "—";
   }
+}
+
+async function fetchPublicIp() {
+  for (const endpoint of PUBLIC_IP_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint.url, {
+        cache: "no-store",
+        headers: endpoint.headers || undefined,
+      });
+      if (!res.ok) continue;
+      const data = await res.json();
+      const ip = data.ip || data.IP || data.address;
+      if (ip) return { ip };
+    } catch {
+      continue;
+    }
+  }
+  throw new Error("Public IP unavailable");
 }
 
 function updateSummary() {
