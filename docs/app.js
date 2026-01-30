@@ -3,6 +3,7 @@ const pingValue = document.getElementById("pingValue");
 const downValue = document.getElementById("downValue");
 const upValue = document.getElementById("upValue");
 const speedArrow = document.getElementById("speedArrow");
+const speedLabel = document.getElementById("speedLabel");
 const phase = document.getElementById("phase");
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
@@ -111,6 +112,10 @@ function setArrow(direction) {
 function setSpeed(value) {
   speedValue.textContent = formatMbps(value);
   updateSummary();
+}
+
+function setSpeedLabel(text) {
+  if (speedLabel) speedLabel.textContent = text;
 }
 
 function toNumber(text) {
@@ -349,11 +354,17 @@ async function runTest() {
   sessionValue.textContent = sessionStart.toLocaleTimeString("en-US");
 
   try {
+    setSpeedLabel("LIVE");
     await runPing(aborter.signal);
     const down = await runDownload(aborter.signal);
     setSpeed(down);
     const up = await runUpload(aborter.signal);
     setSpeed(up);
+    if (Number.isFinite(down) && Number.isFinite(up)) {
+      const avg = (down + up) / 2;
+      setSpeed(avg);
+      setSpeedLabel("AVG");
+    }
     setPhase("Done");
     setArrow(null);
     updateSpeedInsights();
